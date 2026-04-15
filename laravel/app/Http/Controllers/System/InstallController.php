@@ -17,8 +17,6 @@ final class InstallController extends Controller
 
     public function show(Request $request): View|Response
     {
-        require_once base_path('vendor/autoload.php');
-
         $configPath = $this->hubConfigPath();
         $alreadyInstalled = false;
         if (is_readable($configPath)) {
@@ -61,8 +59,6 @@ final class InstallController extends Controller
 
     public function store(Request $request): View|Response
     {
-        require_once base_path('vendor/autoload.php');
-
         $configPath = $this->hubConfigPath();
         $schemaPath = base_path('database/legacy_sql/schema.sql');
 
