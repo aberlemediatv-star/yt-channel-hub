@@ -1,0 +1,44 @@
+<?php
+
+use App\Http\Controllers\Admin\SocialAccountsController;
+use App\Http\Controllers\Admin\SocialActivationController;
+use App\Http\Controllers\Admin\SocialPostsController;
+use App\Http\Controllers\Admin\SocialSettingsController;
+use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\LegalController;
+use App\Http\Controllers\SocialOAuthTikTokController;
+use App\Http\Controllers\SocialOAuthXController;
+use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Support\Facades\Route;
+
+Route::middleware(['web'])->group(function (): void {
+    Route::get('/', [HomeController::class, 'index'])->name('site.home');
+    Route::get('/index.php', [HomeController::class, 'index'])->name('site.home.index');
+    Route::get('/datenschutz.php', [LegalController::class, 'datenschutz'])->name('site.datenschutz');
+    Route::get('/impressum.php', [LegalController::class, 'impressum'])->name('site.impressum');
+
+    Route::middleware(['internal.token'])
+        ->withoutMiddleware([ValidateCsrfToken::class])
+        ->prefix('admin/social')
+        ->group(function (): void {
+            Route::get('/activate', [SocialActivationController::class, 'index'])->name('admin.social.activate');
+            Route::get('/settings', [SocialSettingsController::class, 'edit'])->name('admin.social.settings.edit');
+            Route::post('/settings', [SocialSettingsController::class, 'update'])->name('admin.social.settings.update');
+
+            Route::get('/accounts', [SocialAccountsController::class, 'index'])->name('admin.social.accounts');
+            Route::post('/accounts/{account}/disconnect', [SocialAccountsController::class, 'disconnect'])
+                ->name('admin.social.accounts.disconnect');
+            Route::get('/posts', [SocialPostsController::class, 'index'])->name('admin.social.posts');
+            Route::post('/posts/x', [SocialPostsController::class, 'enqueueX'])->name('admin.social.posts.enqueue-x');
+        });
+
+    // OAuth callbacks must stay public (provider redirect); start is gated like other admin/social URLs.
+    Route::get('/oauth/x/callback', [SocialOAuthXController::class, 'callback'])->name('oauth.x.callback');
+    Route::get('/oauth/tiktok/callback', [SocialOAuthTikTokController::class, 'callback'])->name('oauth.tiktok.callback');
+
+    Route::middleware(['internal.token'])
+        ->group(function (): void {
+            Route::get('/oauth/x/start', [SocialOAuthXController::class, 'start'])->name('oauth.x.start');
+            Route::get('/oauth/tiktok/start', [SocialOAuthTikTokController::class, 'start'])->name('oauth.tiktok.start');
+        });
+});
