@@ -39,3 +39,4 @@ GitHub: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)
 | Security / Compliance | [docs/P6_SECURITY_AND_COMPLIANCE.md](docs/P6_SECURITY_AND_COMPLIANCE.md) |
 | Developer Experience | [docs/P7_DEVELOPER_EXPERIENCE.md](docs/P7_DEVELOPER_EXPERIENCE.md) |
 | Plesk / Deploy | [deploy/PLESK_DEPLOY.md](deploy/PLESK_DEPLOY.md) |
+| Laravel Cloud | [docs/LARAVEL_CLOUD.md](docs/LARAVEL_CLOUD.md) |
