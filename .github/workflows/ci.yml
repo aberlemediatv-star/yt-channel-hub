@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+          extensions: mbstring, intl, pdo_sqlite, sodium
+
+      - name: Composer (Laravel)
+        working-directory: laravel
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Composer (Root — PHPStan)
+        run: composer install --no-interaction --prefer-dist
+
+      - name: PHPStan
+        run: composer run stan
+
+      - name: PHPUnit (YtHub, Root-Suite)
+        run: composer run test
+
+      - name: Laravel Pint
+        working-directory: laravel
+        run: composer run lint
+
+      - name: PHPUnit (Laravel)
+        working-directory: laravel
+        run: composer run test

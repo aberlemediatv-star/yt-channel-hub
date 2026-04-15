@@ -1,0 +1,10 @@
+.git
+.gitignore
+vendor
+.env
+.env.docker
+config/config.php
+storage/logs/**
+storage/backups/**
+.phpunit.cache
+docker-compose.override.yml

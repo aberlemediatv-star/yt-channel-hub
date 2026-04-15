@@ -1,0 +1,166 @@
+# =============================================================================
+# Docker Compose — Entwicklung + Produktion
+#
+# Entwicklung:  docker compose up --build
+# Produktion:   Secrets ueber .env-Datei im Projektroot steuern (siehe unten).
+#               LOG_LEVEL auf WARNING setzen, APP_DEBUG=false, etc.
+# =============================================================================
+
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html:ro
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - php
+    restart: unless-stopped
+    networks:
+      - app
+
+  php:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/laravel/vendor
+    environment:
+      DB_DSN: "mysql:host=db;port=3306;dbname=${DB_DATABASE:-yt_hub};charset=utf8mb4"
+      DB_USER: "${DB_USERNAME:-yt_hub}"
+      DB_PASS: "${DB_PASSWORD:-yt_hub_pass}"
+      INTERNAL_TOKEN: "${INTERNAL_TOKEN:-dev-internal-token-change-me}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://localhost:${HTTP_PORT:-8080}/oauth_callback.php}"
+      ADMIN_PASSWORD_HASH_B64: "${ADMIN_PASSWORD_HASH_B64:-JDJ5JDEyJDJ3MnpkM3E4SzU0cWVGMWMwT28xN3VOT08yTDNWVC5acWlUa292ZEtzbVV4bkw0dU95eWhP}"
+      LOG_LEVEL: "${LOG_LEVEL:-DEBUG}"
+      DB_CONNECTION: mariadb
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-yt_hub}"
+      DB_USERNAME: "${DB_USERNAME:-yt_hub}"
+      DB_PASSWORD: "${DB_PASSWORD:-yt_hub_pass}"
+      DB_QUEUE_CONNECTION: mariadb
+      DB_QUEUE_TABLE: laravel_jobs
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      APP_URL: "${APP_URL:-http://localhost:${HTTP_PORT:-8080}}"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_DEBUG: "${APP_DEBUG:-true}"
+      QUEUE_CONNECTION: database
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm-healthcheck || kill -0 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - app
+
+  laravel-queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -lc 'cd laravel && exec php artisan queue:work database --sleep=3 --tries=3 --max-time=3600'
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/laravel/vendor
+    environment:
+      DB_DSN: "mysql:host=db;port=3306;dbname=${DB_DATABASE:-yt_hub};charset=utf8mb4"
+      DB_USER: "${DB_USERNAME:-yt_hub}"
+      DB_PASS: "${DB_PASSWORD:-yt_hub_pass}"
+      INTERNAL_TOKEN: "${INTERNAL_TOKEN:-dev-internal-token-change-me}"
+      ADMIN_PASSWORD_HASH_B64: "${ADMIN_PASSWORD_HASH_B64:-JDJ5JDEyJDJ3MnpkM3E4SzU0cWVGMWMwT28xN3VOT08yTDNWVC5acWlUa292ZEtzbVV4bkw0dU95eWhP}"
+      LOG_LEVEL: "${LOG_LEVEL:-DEBUG}"
+      DB_CONNECTION: mariadb
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-yt_hub}"
+      DB_USERNAME: "${DB_USERNAME:-yt_hub}"
+      DB_PASSWORD: "${DB_PASSWORD:-yt_hub_pass}"
+      DB_QUEUE_CONNECTION: mariadb
+      DB_QUEUE_TABLE: laravel_jobs
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      APP_URL: "${APP_URL:-http://localhost:${HTTP_PORT:-8080}}"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      QUEUE_CONNECTION: database
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: >
+      sh -lc 'while true; do php bin/worker.php || true; sleep 5; done'
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/laravel/vendor
+    environment:
+      DB_DSN: "mysql:host=db;port=3306;dbname=${DB_DATABASE:-yt_hub};charset=utf8mb4"
+      DB_USER: "${DB_USERNAME:-yt_hub}"
+      DB_PASS: "${DB_PASSWORD:-yt_hub_pass}"
+      INTERNAL_TOKEN: "${INTERNAL_TOKEN:-dev-internal-token-change-me}"
+      GOOGLE_REDIRECT_URI: "${GOOGLE_REDIRECT_URI:-http://localhost:${HTTP_PORT:-8080}/oauth_callback.php}"
+      ADMIN_PASSWORD_HASH_B64: "${ADMIN_PASSWORD_HASH_B64:-JDJ5JDEyJDJ3MnpkM3E4SzU0cWVGMWMwT28xN3VOT08yTDNWVC5acWlUa292ZEtzbVV4bkw0dU95eWhP}"
+      LOG_LEVEL: "${LOG_LEVEL:-DEBUG}"
+      DB_CONNECTION: mariadb
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_DATABASE: "${DB_DATABASE:-yt_hub}"
+      DB_USERNAME: "${DB_USERNAME:-yt_hub}"
+      DB_PASSWORD: "${DB_PASSWORD:-yt_hub_pass}"
+      DB_QUEUE_CONNECTION: mariadb
+      DB_QUEUE_TABLE: laravel_jobs
+      CACHE_STORE: file
+      SESSION_DRIVER: file
+      APP_URL: "${APP_URL:-http://localhost:${HTTP_PORT:-8080}}"
+      APP_ENV: "${APP_ENV:-local}"
+      APP_DEBUG: "${APP_DEBUG:-false}"
+      QUEUE_CONNECTION: database
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app
+
+  db:
+    image: mariadb:11
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:-rootsecret}"
+      MYSQL_DATABASE: "${DB_DATABASE:-yt_hub}"
+      MYSQL_USER: "${DB_USERNAME:-yt_hub}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-yt_hub_pass}"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./laravel/database/legacy_sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./laravel/database/legacy_sql/migrations/003_staff_users.sql:/docker-entrypoint-initdb.d/02-staff.sql:ro
+      - ./laravel/database/legacy_sql/migrations/004_staff_modules.sql:/docker-entrypoint-initdb.d/03-staff-modules.sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - app
+
+networks:
+  app:
+
+volumes:
+  db_data:

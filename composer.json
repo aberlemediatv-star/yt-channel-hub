@@ -1,0 +1,28 @@
+{
+  "name": "yt-channel-hub/local",
+  "description": "YouTube Multi-Channel Frontend + Analytics Backend",
+  "require": {
+    "php": "^8.4"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^2.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "YtHub\\": "laravel/src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "YtHub\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "@php laravel/vendor/bin/phpunit -c phpunit.xml.dist",
+    "stan": "phpstan analyse --memory-limit=512M",
+    "ci": [
+      "@test",
+      "@stan"
+    ]
+  }
+}

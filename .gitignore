@@ -1,0 +1,12 @@
+/vendor/
+/laravel/vendor/
+/config/config.php
+/laravel/config/hub.php
+/.env
+composer.phar
+.DS_Store
+/storage/logs/*.log
+/storage/backups/**
+!/storage/backups/.gitkeep
+/.phpunit.cache/
+/dist/*.zip

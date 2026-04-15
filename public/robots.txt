@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /staff/
+Disallow: /install.php
+Disallow: /sync_videos.php
+Disallow: /sync_analytics.php
+Disallow: /oauth_start.php
+Disallow: /oauth_callback.php
+Disallow: /health.php

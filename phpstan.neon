@@ -1,0 +1,8 @@
+parameters:
+    level: 5
+    bootstrapFiles:
+        - laravel/vendor/autoload.php
+    paths:
+        - laravel/src
+    excludePaths:
+        - laravel/src/lang/messages_*.php
