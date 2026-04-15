@@ -13,7 +13,7 @@ Mehrkanal-**YouTube**-Übersicht (Carousel), **Analytics**, Admin- und Staff-Ber
 3. **YtHub-Konfiguration:** [`laravel/config/hub.example.php`](laravel/config/hub.example.php) nach `laravel/config/hub.php` kopieren (Datenbank, Admin-Hash, `internal_token`, Google) — oder den Web-Installer nutzen.  
 4. **Kern-Schema:** [`laravel/database/legacy_sql/schema.sql`](laravel/database/legacy_sql/schema.sql) in dieselbe Datenbank einspielen, danach **`php bin/migrate.php`** im Projektroot (führt `laravel/database/legacy_sql/migrations/*.sql` aus) bzw. auf dem Server nur Laravel: **`php bin/legacy-migrate.php`**.  
    **Plesk mit flachem Webroot** (`app/`/`public/` ohne `laravel/`): Deploy-ZIP mit **`bash deploy/build-plesk-zip.sh --flat`**, Document Root **`public`**, siehe [deploy/PLESK_DEPLOY.md](deploy/PLESK_DEPLOY.md).  
-5. *(Optional)* Im Projektroot **`composer install`** für PHPUnit/PHPStan der Root-Tests.
+5. *(Optional)* Im Projektroot **`composer install`** — gleiches Dependency-Set wie Laravel (für Laravel Cloud-Erkennung); lokal reicht meist **`cd laravel && composer install`**.
 
 Statische Assets liegen unter **`laravel/public/`** (Document Root für Plesk: `laravel/public`).
 
@@ -22,8 +22,10 @@ Ausführlicher: **[docs/P7_DEVELOPER_EXPERIENCE.md](docs/P7_DEVELOPER_EXPERIENCE
 ## Qualität & CI
 
 ```bash
-composer run ci          # Root: PHPUnit + PHPStan (YtHub unter laravel/src)
-cd laravel && composer run ci
+cd laravel && composer install
+composer run stan        # PHPStan (Konfiguration: laravel/phpstan.neon)
+composer run test-root   # PHPUnit: Tests unter tests/
+cd laravel && composer run ci   # Pint + Laravel-Tests
 ```
 
 GitHub: [`.github/workflows/ci.yml`](.github/workflows/ci.yml)

@@ -2,7 +2,11 @@
 
 ## Meldung: „Unsupported framework“ (trotz Branch `laravel-cloud`)
 
-[Laravel Cloud](https://cloud.laravel.com) prüft beim **Auswählen des Repositories** oft nur den **Standard-Branch** (bei euch meist **`main`**). Auf `main` liegt Laravel unter **`laravel/`**, nicht im Root — dann erscheint **Unsupported framework**, **auch wenn** der Branch `laravel-cloud` korrekt wäre.
+[Laravel Cloud](https://cloud.laravel.com) prüft das **Repository-Root** (oft der **Standard-Branch `main`**). Dort müssen u. a. **`composer.json` mit `laravel/framework`** und eine passende **`composer.lock`** erkennbar sein.
+
+Im Monorepo liegt der Anwendungscode unter **`laravel/`**; im Root gibt es zusätzlich ein **`composer.json`**, das dieselben Pakete wie `laravel/composer.json` deklariert (Pfade mit Prefix `laravel/…`), und **`composer.lock`** (Laravel inkl. Lock). Zusätzlich liegt **`artisan`** im Root. Damit sollte die Erkennung auf **`main`** funktionieren.
+
+Wenn die Meldung **trotzdem** kommt: Branch **`laravel-cloud`** wählen oder **Lösung A** (Default-Branch kurz umstellen).
 
 ### Sofort-Lösung A: Standard-Branch temporär wechseln
 
@@ -17,10 +21,10 @@ In der Cloud-Umgebung weiterhin den Deploy-Branch **`laravel-cloud`** wählen, f
 
 Falls Laravel Cloud **explizit nach Branch fragt**, unbedingt **`laravel-cloud`** wählen, **nicht** `main`.
 
-### Was im Root von `main` jetzt zusätzlich liegt
+### Root-Dateien für Cloud / lokale DX
 
-- **`artisan`** im Repository-Root leitet nach **`laravel/artisan`** weiter (`php artisan …` funktioniert vom Monorepo-Root).  
-  Ob Laravel Cloud damit die Erkennung auf `main` schon akzeptiert, ist **nicht garantiert** — die zuverlässige Variante bleibt **`laravel-cloud`** bzw. **Lösung A**.
+- **`artisan`** → leitet nach **`laravel/artisan`**.
+- **`composer.json` / `composer.lock`** im Root → Laravel-Erkennung + gleiche Versionen wie unter `laravel/` (lokal meist nur `cd laravel && composer install` nötig).
 
 ---
 

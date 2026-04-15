@@ -22,14 +22,11 @@ jobs:
         working-directory: laravel
         run: composer install --no-interaction --prefer-dist
 
-      - name: Composer (Root — PHPStan)
-        run: composer install --no-interaction --prefer-dist
-
-      - name: PHPStan
+      - name: PHPStan (YtHub, Monorepo-Root composer.json)
         run: composer run stan
 
       - name: PHPUnit (YtHub, Root-Suite)
-        run: composer run test
+        run: composer run test-root
 
       - name: Laravel Pint
         working-directory: laravel
