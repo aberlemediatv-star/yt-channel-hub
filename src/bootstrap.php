@@ -8,7 +8,7 @@ use YtHub\EnvBootstrap;
 use Google\Client;
 
 $appRoot = dirname(__DIR__);
-require_once $appRoot . '/vendor/autoload.php';
+require_once $appRoot.'/bootstrap/load-composer-autoload.php';
 
 EnvBootstrap::load($appRoot);
 
