@@ -1,0 +1,14 @@
+#!/usr/bin/env php
+<?php
+
+/**
+ * Monorepo: Laravel liegt unter laravel/. So funktionieren z. B. `php artisan …`
+ * und einige Hosting-Erkennungen vom Repository-Root aus.
+ */
+$laravel = __DIR__.'/laravel';
+if (! is_file($laravel.'/artisan')) {
+    fwrite(STDERR, "Laravel nicht gefunden ({$laravel}/artisan fehlt).\n");
+    exit(1);
+}
+chdir($laravel);
+require $laravel.'/artisan';

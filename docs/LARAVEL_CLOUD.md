@@ -1,16 +1,36 @@
 # Laravel Cloud und dieses Repository
 
-## Meldung: „Unsupported framework“
+## Meldung: „Unsupported framework“ (trotz Branch `laravel-cloud`)
 
-[Laravel Cloud](https://cloud.laravel.com) erkennt beim Anlegen der App nur Repositories, in denen **im Root** eine Laravel- (oder Symfony-)Anwendung liegt: typisch `artisan`, `composer.json` mit `laravel/framework` usw.
+[Laravel Cloud](https://cloud.laravel.com) prüft beim **Auswählen des Repositories** oft nur den **Standard-Branch** (bei euch meist **`main`**). Auf `main` liegt Laravel unter **`laravel/`**, nicht im Root — dann erscheint **Unsupported framework**, **auch wenn** der Branch `laravel-cloud` korrekt wäre.
 
-In **yt-channel-hub** liegt die Laravel-App unter **`laravel/`**, daneben `bin/`, `deploy/`, `docs/` — das Root ist ein **Monorepo**, kein klassisches Laravel-Root. Deshalb erscheint **Unsupported framework**.
+### Sofort-Lösung A: Standard-Branch temporär wechseln
 
-## Empfohlene Lösung: Branch nur mit `laravel/`
+1. **GitHub:** Repository **Settings → General → Default branch**  
+   → auf **`laravel-cloud`** stellen (bestätigen).
+2. **Laravel Cloud:** Application neu anlegen oder Repository erneut verbinden — Auswahl sollte jetzt als Laravel erkannt werden.
+3. **GitHub:** Default branch wieder auf **`main`** stellen (nach erfolgreicher Einrichtung).
 
-Git kann aus dem Ordner `laravel/` einen **eigenen Branch** erzeugen, dessen Root genau der Laravel-Code ist. Diesen Branch verknüpfst du in Laravel Cloud (oder ein kleines Deploy-Repo, das nur diesen Branch spiegelt).
+In der Cloud-Umgebung weiterhin den Deploy-Branch **`laravel-cloud`** wählen, falls die UI das getrennt vom „Repository-Scan“ anbietet.
 
-Lokal (einmalig; ersetzt ggf. einen bestehenden Branch `laravel-cloud`):
+### Sofort-Lösung B: Nur Branch `laravel-cloud` in der UI
+
+Falls Laravel Cloud **explizit nach Branch fragt**, unbedingt **`laravel-cloud`** wählen, **nicht** `main`.
+
+### Was im Root von `main` jetzt zusätzlich liegt
+
+- **`artisan`** im Repository-Root leitet nach **`laravel/artisan`** weiter (`php artisan …` funktioniert vom Monorepo-Root).  
+  Ob Laravel Cloud damit die Erkennung auf `main` schon akzeptiert, ist **nicht garantiert** — die zuverlässige Variante bleibt **`laravel-cloud`** bzw. **Lösung A**.
+
+---
+
+## Hintergrund
+
+Auf **`main`** ist ein **Monorepo** (`laravel/`, `bin/`, `deploy/`, …), kein klassisches Laravel-Root mit `app/` direkt unter `/`.
+
+## Branch nur mit `laravel/` (empfohlen für Cloud-Builds)
+
+Git erzeugt aus `laravel/` einen Branch, dessen Root = Laravel-App:
 
 ```bash
 cd "/Users/christianaberle/YT Channel carousel"
@@ -19,16 +39,9 @@ git subtree split -P laravel -b laravel-cloud
 git push -u origin laravel-cloud:laravel-cloud --force
 ```
 
-In **Laravel Cloud** beim Anlegen der Application: dasselbe Repository wählen, Branch **`laravel-cloud`** (nicht `main`).
+Nach Änderungen **unter `laravel/`** auf `main` den Befehl wiederholen, damit Cloud den aktuellen Stand bekommt.
 
-Hinweise:
+## Offizieller Monorepo-Workaround (Laravel-Doku)
 
-- Auf diesem Branch fehlen **`bin/`** und **`deploy/`** am Root — für Laravel Cloud meist unkritisch (Queues/Cron über Cloud, nicht `bin/worker.php`).
-- **Plesk** und **ZIP-Deploy** bleiben unverändert auf **`main`** mit Ordner `laravel/`.
-
-## Alternative (offizieller Workaround)
-
-Laravel dokumentiert einen Monorepo-Workaround mit **Root-`composer.lock`-Kopie** und **Build-Skript**, das `laravel/` nach Checkout „hochzieht“:  
-[Konsole: Monorepo Support](https://cloud.laravel.com/docs/knowledge-base/monorepo-support.md)
-
-Das ist fehleranfälliger und muss in der Cloud-UI pro Environment gepflegt werden; der **Subtree-Branch** ist meist klarer.
+Mit **Root-`composer.lock`-Kopie** und **Build-Skript**, das `laravel/` nach Checkout nach oben kopiert:  
+[Monorepo Support](https://cloud.laravel.com/docs/knowledge-base/monorepo-support.md)
