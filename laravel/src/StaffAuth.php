@@ -11,6 +11,8 @@ final class StaffAuth
 {
     private const SESSION_KEY = 'yt_hub_staff_ok';
     private const SESSION_ID = 'yt_hub_staff_id';
+    private const LAST_SEEN_KEY = 'yt_hub_staff_last_seen';
+    private const IDLE_SECONDS = 3600;
 
     public static function startSession(): void
     {
@@ -31,7 +33,18 @@ final class StaffAuth
 
     public static function isLoggedIn(): bool
     {
-        return !empty($_SESSION[self::SESSION_KEY]) && (int) ($_SESSION[self::SESSION_ID] ?? 0) > 0;
+        if (empty($_SESSION[self::SESSION_KEY]) || (int) ($_SESSION[self::SESSION_ID] ?? 0) <= 0) {
+            return false;
+        }
+        $last = (int) ($_SESSION[self::LAST_SEEN_KEY] ?? 0);
+        if ($last > 0 && (time() - $last) > self::IDLE_SECONDS) {
+            unset($_SESSION[self::SESSION_KEY], $_SESSION[self::SESSION_ID], $_SESSION[self::LAST_SEEN_KEY]);
+
+            return false;
+        }
+        $_SESSION[self::LAST_SEEN_KEY] = time();
+
+        return true;
     }
 
     public static function staffId(): int
@@ -47,6 +60,7 @@ final class StaffAuth
         session_regenerate_id(true);
         $_SESSION[self::SESSION_KEY] = true;
         $_SESSION[self::SESSION_ID] = $staffId;
+        $_SESSION[self::LAST_SEEN_KEY] = time();
     }
 
     public static function verifyAndLogin(string $username, string $password): bool

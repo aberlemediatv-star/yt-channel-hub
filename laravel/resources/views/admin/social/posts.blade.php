@@ -8,20 +8,9 @@
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">Social Posts</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/social/accounts?token={{ urlencode($token) }}">Accounts</a>
-        <a href="/admin/social/activate?token={{ urlencode($token) }}">Aktivierung</a>
-        <a href="/admin/social/settings?token={{ urlencode($token) }}">Settings</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">{{ \YtHub\Lang::t('admin.nav.social_posts') }}</h1>
 
     @if(session('status'))
         <div class="adm-flash adm-flash-ok">{{ session('status') }}</div>
@@ -41,7 +30,7 @@
         <p class="adm-note" style="margin-top:0;">
             Benötigt verbundenen X-Account. Es wird ein normaler Tweet erstellt (kein Video-Upload aus lokaler Datei).
         </p>
-        <form method="post" action="/admin/social/posts/x?token={{ urlencode($token) }}" class="adm-form" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
+        <form method="post" action="/admin/social/posts/x" class="adm-form" style="display:flex;gap:0.75rem;align-items:flex-end;flex-wrap:wrap;">
             @csrf
             <div>
                 <label for="x_text" style="font-size:0.8rem;margin-bottom:4px;">Text (optional)</label>
@@ -51,7 +40,11 @@
                 <label for="x_yt" style="font-size:0.8rem;margin-bottom:4px;">YouTube Video-ID (optional)</label>
                 <input id="x_yt" name="youtube_video_id" type="text" maxlength="64" style="width:220px;" value="{{ old('youtube_video_id') }}">
             </div>
-            <button class="adm-btn" type="submit">An X senden</button>
+            <div>
+                <label for="x_sched" style="font-size:0.8rem;margin-bottom:4px;">Planen für (optional)</label>
+                <input id="x_sched" name="scheduled_for" type="datetime-local" style="width:210px;" value="{{ old('scheduled_for') }}">
+            </div>
+            <button class="adm-btn" type="submit">An X senden / planen</button>
         </form>
     </div>
 
@@ -65,7 +58,9 @@
             <th>ID</th>
             <th>Plattform</th>
             <th>Status</th>
-            <th>Channel</th>
+            <th>Versuche</th>
+            <th>Geplant</th>
+            <th>Nächster Retry</th>
             <th>YouTube</th>
             <th>External</th>
             <th>Error</th>
@@ -78,15 +73,17 @@
                 <td>{{ $p->id }}</td>
                 <td>{{ $p->platform }}</td>
                 <td>{{ $p->status }}</td>
-                <td>{{ $p->channel_id }}</td>
+                <td>{{ (int) $p->attempts }}/{{ (int) ($p->max_attempts ?: 5) }}</td>
+                <td>{{ $p->scheduled_for ? $p->scheduled_for->format('Y-m-d H:i') : '—' }}</td>
+                <td>{{ $p->next_attempt_at ? $p->next_attempt_at->format('Y-m-d H:i') : '—' }}</td>
                 <td>{{ $p->youtube_video_id }}</td>
                 <td>{{ $p->external_id }}</td>
-                <td style="max-width:360px;word-break:break-word;">{{ $p->error_message }}</td>
+                <td style="max-width:320px;word-break:break-word;">{{ $p->error_message }}</td>
                 <td>{{ $p->created_at }}</td>
             </tr>
         @endforeach
         @if($posts->count() === 0)
-            <tr><td colspan="8" style="color:var(--adm-muted);">Noch keine Posts.</td></tr>
+            <tr><td colspan="10" style="color:var(--adm-muted);">Noch keine Posts.</td></tr>
         @endif
         </tbody>
     </table>

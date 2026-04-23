@@ -7,6 +7,7 @@ use App\Models\SocialSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class SocialOAuthTikTokController
@@ -18,11 +19,9 @@ final class SocialOAuthTikTokController
             abort(400, 'TikTok Client Key fehlt (Settings).');
         }
 
-        $token = (string) $request->query('token', '');
         $state = Str::random(32);
 
         $request->session()->put('tiktok_oauth_state', $state);
-        $request->session()->put('tiktok_oauth_token', $token);
 
         $redirectUri = rtrim((string) config('app.url', 'http://localhost'), '/').'/oauth/tiktok/callback';
 
@@ -46,14 +45,13 @@ final class SocialOAuthTikTokController
     public function callback(Request $request): RedirectResponse
     {
         $expectedState = (string) $request->session()->pull('tiktok_oauth_state', '');
-        $token = (string) $request->session()->pull('tiktok_oauth_token', '');
 
         $state = (string) $request->query('state', '');
         $code = (string) $request->query('code', '');
         $error = (string) $request->query('error', '');
 
         if ($error !== '') {
-            return redirect()->to('/admin/social/accounts?token='.urlencode($token));
+            return redirect()->to('/admin/social/accounts');
         }
         if ($expectedState === '' || $state === '' || ! hash_equals($expectedState, $state)) {
             abort(400, 'Ungültiger state.');
@@ -80,7 +78,8 @@ final class SocialOAuthTikTokController
         ]);
 
         if (! $resp->ok()) {
-            abort(400, 'TikTok token exchange fehlgeschlagen: '.$resp->body());
+            Log::warning('tiktok_oauth_token_exchange_failed', ['status' => $resp->status(), 'body' => $resp->body()]);
+            abort(400, 'TikTok token exchange fehlgeschlagen.');
         }
 
         $data = $resp->json();
@@ -94,6 +93,11 @@ final class SocialOAuthTikTokController
             abort(400, 'TikTok access_token fehlt.');
         }
 
+        $metaSafe = is_array($data) ? $data : [];
+        foreach (['access_token', 'refresh_token', 'id_token'] as $secretKey) {
+            unset($metaSafe[$secretKey]);
+        }
+
         $upsertAttrs = [
             'label' => $openId !== '' ? ('TikTok '.$openId) : 'TikTok',
             'access_token' => $accessToken,
@@ -101,7 +105,7 @@ final class SocialOAuthTikTokController
             'token_expires_at' => $expiresIn > 0 ? now()->addSeconds($expiresIn) : null,
             'scopes' => $scope,
             'meta' => [
-                'token' => $data,
+                'token' => $metaSafe,
             ],
         ];
         if ($openId !== '') {
@@ -116,6 +120,6 @@ final class SocialOAuthTikTokController
             ));
         }
 
-        return redirect()->to('/admin/social/accounts?token='.urlencode($token));
+        return redirect()->to('/admin/social/accounts');
     }
 }

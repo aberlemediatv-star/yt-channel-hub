@@ -5,15 +5,17 @@ namespace App\Services\Social;
 use App\Models\SocialAccount;
 use App\Models\SocialPost;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class XPublisher
 {
     public function __construct(
         private readonly XAccessTokenRefresher $tokenRefresher,
+        private readonly XMediaUploader $mediaUploader,
     ) {}
 
     /**
-     * Text/Link-Tweets (API v2). Lokaler Video-Upload bleibt vorbereitet.
+     * Text/Link tweets (v2) and local-video tweets (v1.1 chunked upload → v2 tweet).
      */
     public function publishVideoPost(SocialPost $post): string
     {
@@ -24,25 +26,34 @@ final class XPublisher
 
         $this->tokenRefresher->refreshIfNeeded($acct);
 
-        $local = $post->local_video_path;
-        if (is_string($local) && trim($local) !== '') {
-            throw new \RuntimeException(
-                'X Video-Upload aus lokaler Datei ist noch nicht angebunden (chunked media upload + Tweet mit media_id).'
-            );
+        $text = $this->buildTweetText($post);
+        $local = is_string($post->local_video_path) ? trim($post->local_video_path) : '';
+
+        $body = [];
+        if ($text !== '') {
+            $body['text'] = $text;
         }
 
-        $text = $this->buildTweetText($post);
-        if ($text === '') {
-            throw new \RuntimeException('Tweet leer: payload.text und/oder youtube_video_id setzen.');
+        if ($local !== '') {
+            if (! is_file($local)) {
+                throw new \RuntimeException('X Video-Datei nicht gefunden: ' . $local);
+            }
+            $mediaId = $this->mediaUploader->uploadVideo($acct, $local);
+            $body['media'] = ['media_ids' => [$mediaId]];
+        }
+
+        if ($body === []) {
+            throw new \RuntimeException('Tweet leer: text und/oder Video/youtube_video_id setzen.');
         }
 
         $resp = Http::withToken($acct->access_token)
             ->acceptJson()
-            ->post('https://api.x.com/2/tweets', ['text' => $text]);
+            ->post('https://api.x.com/2/tweets', $body);
 
         if (! $resp->successful()) {
-            $detail = $resp->json('detail') ?? $resp->json('title') ?? $resp->body();
-            throw new \RuntimeException('X API Fehler: '.(is_string($detail) ? $detail : json_encode($detail)));
+            Log::warning('x_tweet_post_failed', ['status' => $resp->status(), 'body' => $resp->body()]);
+            $detail = $resp->json('detail') ?? $resp->json('title') ?? 'HTTP ' . $resp->status();
+            throw new \RuntimeException('X API Fehler: ' . (is_string($detail) ? $detail : json_encode($detail)));
         }
 
         $id = (string) ($resp->json('data.id') ?? '');
@@ -63,15 +74,18 @@ final class XPublisher
             $chunks[] = $body;
         }
         $yt = $post->youtube_video_id;
-        if (is_string($yt) && trim($yt) !== '') {
-            $chunks[] = 'https://www.youtube.com/watch?v='.rawurlencode(trim($yt));
+        // Only append a YouTube URL when we aren't uploading a local video —
+        // otherwise the tweet would have both a media attachment AND a link.
+        $hasLocal = is_string($post->local_video_path) && trim($post->local_video_path) !== '';
+        if (! $hasLocal && is_string($yt) && trim($yt) !== '') {
+            $chunks[] = 'https://www.youtube.com/watch?v=' . rawurlencode(trim($yt));
         }
         $out = implode("\n\n", $chunks);
         if ($out === '') {
             return '';
         }
         if (mb_strlen($out, 'UTF-8') > 280) {
-            return mb_substr($out, 0, 277, 'UTF-8').'...';
+            return mb_substr($out, 0, 277, 'UTF-8') . '...';
         }
 
         return $out;

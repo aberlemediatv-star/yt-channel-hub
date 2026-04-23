@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Services\CloudImport\GdriveCloudService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use YtHub\Lang;
+use YtHub\StaffCsrf;
 
 final class GdriveOAuthController extends Controller
 {
@@ -37,7 +39,7 @@ final class GdriveOAuthController extends Controller
         $channelId = (int) $request->session()->pull('cloud_oauth_return_channel_id', 0);
         $expected = (string) $request->session()->pull('cloud_oauth_gdrive_state', '');
         $state = (string) $request->query('state', '');
-        if ($expected === '' || $state !== $expected) {
+        if ($expected === '' || $state === '' || ! hash_equals($expected, $state)) {
             return redirect()->to('/staff/upload.php?channel_id='.$channelId)
                 ->with('cloud_error', Lang::t('staff.cloud_oauth_state_invalid'));
         }
@@ -49,8 +51,10 @@ final class GdriveOAuthController extends Controller
         try {
             $gdrive->exchangeCodeForRefreshToken($code);
         } catch (\Throwable $e) {
+            Log::warning('gdrive_oauth_exchange_failed', ['error' => $e->getMessage()]);
+
             return redirect()->to('/staff/upload.php?channel_id='.$channelId)
-                ->with('cloud_error', $e->getMessage());
+                ->with('cloud_error', Lang::t('staff.cloud_oauth_denied'));
         }
 
         return redirect()->to('/staff/upload.php?channel_id='.$channelId)
@@ -61,7 +65,15 @@ final class GdriveOAuthController extends Controller
     {
         require_once base_path('src/bootstrap.php');
         Lang::init();
-        $channelId = (int) $request->query('channel_id', 0);
+
+        if (! $request->isMethod('post')) {
+            abort(405);
+        }
+        if (! StaffCsrf::validate((string) $request->input('csrf_token', ''))) {
+            abort(403);
+        }
+
+        $channelId = (int) $request->input('channel_id', 0);
         $gdrive->disconnect();
 
         return redirect()->to('/staff/upload.php?channel_id='.$channelId)

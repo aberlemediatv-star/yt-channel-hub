@@ -52,7 +52,12 @@ final class CloudFilesController extends Controller
                 default => response()->json(['error' => 'bad_provider'], 400),
             };
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 502);
+            \Illuminate\Support\Facades\Log::warning('staff_cloudfiles_failed', [
+                'provider' => $provider,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'cloud_request_failed'], 502);
         }
     }
 }

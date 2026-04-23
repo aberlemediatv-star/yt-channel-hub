@@ -66,7 +66,7 @@ final class SocialSettingsController extends Controller
         SocialSetting::setEncrypted('linkedin.client_secret', (string) ($data['linkedin_client_secret'] ?? ''));
 
         return redirect()
-            ->to('/admin/social/settings?token='.urlencode((string) $request->query('token', '')))
+            ->to('/admin/social/settings')
             ->with('status', 'Gespeichert.');
     }
 }

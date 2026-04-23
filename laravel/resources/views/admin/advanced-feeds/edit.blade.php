@@ -12,18 +12,12 @@
     </style>
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/advanced-feeds?token={{ urlencode($token) }}" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">{{ $feed ? 'Feed bearbeiten' : 'Neuer Feed' }}</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/advanced-feeds?token={{ urlencode($token) }}">Zurück</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">{{ $feed ? 'Feed bearbeiten: '.$feed->title : 'Neuer Feed' }}</h1>
+    <p class="adm-actions">
+        <a class="adm-btn adm-btn-secondary" href="{{ url('/admin/advanced-feeds') }}">← Zur Übersicht</a>
+    </p>
 
     @if(session('status'))
         <div class="adm-flash adm-flash-ok">{{ session('status') }}</div>
@@ -77,7 +71,7 @@
     </form>
 
     @if($feed)
-        <form method="post" action="/admin/advanced-feeds/{{ $feed->id }}?token={{ urlencode($token) }}" style="margin:0;display:inline;margin-top:-0.5rem;" onsubmit="return confirm('Feed wirklich löschen?');">
+        <form method="post" action="/admin/advanced-feeds/{{ $feed->id }}" style="margin:0;display:inline;margin-top:-0.5rem;" onsubmit="return confirm('Feed wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.');">
             @csrf @method('DELETE')
             <button type="submit" class="adm-btn adm-btn-secondary" style="color:var(--adm-err);">Löschen</button>
         </form>

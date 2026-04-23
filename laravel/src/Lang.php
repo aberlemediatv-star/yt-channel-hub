@@ -149,10 +149,19 @@ final class Lang
     }
 
     /**
-     * Absolute URL für hreflang (aktueller Host + Script-Verzeichnis).
+     * Absolute URL für hreflang. Nimmt bevorzugt den konfigurierten app.url
+     * (nicht den Host-Header), damit Cache-Poisoning via Host-Header-Injection
+     * keine manipulierten SEO-URLs verursachen kann.
      */
     public static function absoluteUrl(string $relativeFromPublicDir): string
     {
+        $configured = function_exists('config') ? (string) config('app.url', '') : '';
+        if ($configured !== '') {
+            $base = rtrim($configured, '/');
+
+            return $base . '/' . ltrim($relativeFromPublicDir, '/');
+        }
+
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
             || ((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https')
             ? 'https'

@@ -55,6 +55,13 @@
                 <td class="adm-actions">
                     <a class="adm-btn adm-btn-secondary" href="{{ url('/admin/staff_modules.php?id='.$sid) }}">{{ Lang::t('admin.staff_btn_modules') }}</a>
                     <a class="adm-btn adm-btn-secondary" href="{{ url('/admin/staff_channels.php?id='.$sid) }}">{{ Lang::t('admin.staff_btn_channels') }}</a>
+                    <form class="adm-inline" method="post" action="{{ url('/admin/staff_manage.php') }}" style="display:inline-flex;gap:.25rem;align-items:center;">
+                        {!! Csrf::hiddenField() !!}
+                        <input type="hidden" name="action" value="reset_password">
+                        <input type="hidden" name="id" value="{{ $sid }}">
+                        <input type="password" name="password" required minlength="12" autocomplete="new-password" placeholder="{{ Lang::t('admin.staff_label_password') }}" style="max-width:140px;">
+                        <button type="submit" class="adm-btn adm-btn-secondary">{{ Lang::t('admin.staff_btn_reset_password') }}</button>
+                    </form>
                     <form class="adm-inline" method="post" action="{{ url('/admin/staff_manage.php') }}" onsubmit="return confirm(@json(Lang::t('admin.staff_confirm_delete')));">
                         {!! Csrf::hiddenField() !!}
                         <input type="hidden" name="action" value="delete">

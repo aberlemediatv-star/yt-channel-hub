@@ -31,7 +31,9 @@ use App\Support\Feed\ISODurationHelper;
     $title = $item->effectiveTitle() ?? $yt['title'];
     $desc = $item->effectiveDescription() ?? trim((string) ($yt['description'] ?? ''));
     if ($desc === '') { $desc = $title; }
-    $pubDate = $yt['published_at'] ? (new DateTime($yt['published_at']))->format('D, d M Y H:i:s') . ' +0000' : $buildDate;
+    $pubDate = $yt['published_at']
+        ? (new DateTime((string) $yt['published_at'], new DateTimeZone('UTC')))->format('D, d M Y H:i:s') . ' +0000'
+        : $buildDate;
 @endphp
     <item>
         <title>{{ e($title) }}</title>

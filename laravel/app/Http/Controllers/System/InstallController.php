@@ -62,6 +62,33 @@ final class InstallController extends Controller
         $configPath = $this->hubConfigPath();
         $schemaPath = base_path('database/legacy_sql/schema.sql');
 
+        // Serialize concurrent install attempts to prevent a second POST from
+        // clobbering a successful install that hasn't finished writing yet.
+        $lockPath = storage_path('framework/install.lock');
+        @mkdir(dirname($lockPath), 0755, true);
+        $lockHandle = fopen($lockPath, 'c');
+        if ($lockHandle === false || ! flock($lockHandle, LOCK_EX | LOCK_NB)) {
+            if ($lockHandle !== false) {
+                fclose($lockHandle);
+            }
+
+            return response(
+                "Eine Installation läuft bereits. Bitte später erneut versuchen.\n",
+                423,
+                ['Content-Type' => 'text/plain; charset=utf-8']
+            );
+        }
+
+        try {
+            return $this->runInstallUnderLock($request, $configPath, $schemaPath);
+        } finally {
+            flock($lockHandle, LOCK_UN);
+            fclose($lockHandle);
+        }
+    }
+
+    private function runInstallUnderLock(Request $request, string $configPath, string $schemaPath): View|Response
+    {
         $alreadyInstalled = false;
         if (is_readable($configPath)) {
             try {
@@ -152,7 +179,8 @@ final class InstallController extends Controller
                 $savedInternalToken = $internalToken;
                 $done = true;
             } catch (\Throwable $e) {
-                $errors[] = $e->getMessage();
+                \Illuminate\Support\Facades\Log::error('install_failed', ['error' => $e->getMessage()]);
+                $errors[] = 'Installation fehlgeschlagen. Details stehen im Server-Log.';
             }
         }
 

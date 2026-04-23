@@ -7,6 +7,8 @@ namespace YtHub;
 final class AdminAuth
 {
     private const SESSION_KEY = 'yt_hub_admin_ok';
+    private const LAST_SEEN_KEY = 'yt_hub_admin_last_seen';
+    private const IDLE_SECONDS = 3600; // 60 minutes of inactivity ⇒ auto-logout
 
     public static function startSession(): void
     {
@@ -27,7 +29,20 @@ final class AdminAuth
 
     public static function isLoggedIn(): bool
     {
-        return !empty($_SESSION[self::SESSION_KEY]);
+        if (empty($_SESSION[self::SESSION_KEY])) {
+            return false;
+        }
+        $last = (int) ($_SESSION[self::LAST_SEEN_KEY] ?? 0);
+        if ($last > 0 && (time() - $last) > self::IDLE_SECONDS) {
+            // Silent idle expiry: drop session state but keep the session alive
+            // so Lang/flash still work on the login page.
+            unset($_SESSION[self::SESSION_KEY], $_SESSION[self::LAST_SEEN_KEY], $_SESSION['_csrf_token']);
+
+            return false;
+        }
+        $_SESSION[self::LAST_SEEN_KEY] = time();
+
+        return true;
     }
 
     public static function login(string $password): bool
@@ -41,6 +56,7 @@ final class AdminAuth
         }
         session_regenerate_id(true);
         $_SESSION[self::SESSION_KEY] = true;
+        $_SESSION[self::LAST_SEEN_KEY] = time();
         return true;
     }
 

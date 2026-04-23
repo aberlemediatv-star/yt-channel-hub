@@ -8,20 +8,9 @@
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">Social Settings</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/social/activate?token={{ urlencode(request()->query('token', '')) }}">Aktivierung</a>
-        <a href="/admin/social/accounts?token={{ urlencode(request()->query('token', '')) }}">Accounts</a>
-        <a href="/admin/social/posts?token={{ urlencode(request()->query('token', '')) }}">Posts</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">{{ \YtHub\Lang::t('admin.nav.social_settings') }}</h1>
 
     @if (session('status'))
         <div class="adm-flash adm-flash-ok">{{ session('status') }}</div>

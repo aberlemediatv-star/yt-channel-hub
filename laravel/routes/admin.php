@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdvancedFeedController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\ApiKeysController;
+use App\Http\Controllers\Admin\AuditController;
 use App\Http\Controllers\Admin\ChannelController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\EnqueueController;
@@ -40,6 +41,8 @@ Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.admin.auth'])
         Route::match(['get', 'post'], '/admin/staff_manage.php', [StaffManageController::class, 'show']);
         Route::match(['get', 'post'], '/admin/staff_channels.php', [StaffChannelsController::class, 'show']);
         Route::match(['get', 'post'], '/admin/staff_modules.php', [StaffModulesController::class, 'show']);
+
+        Route::get('/admin/audit', [AuditController::class, 'show'])->name('admin.audit');
     });
 
 Route::middleware(['web', 'yt.bootstrap'])
@@ -80,5 +83,10 @@ Route::middleware(['web', 'yt.bootstrap'])
                 ->name('admin.advanced-feeds.tmdb-apply');
             Route::post('/admin/advanced-feeds/{feed}/items/{item}/tmdb-clear', [AdvancedFeedController::class, 'tmdbClear'])
                 ->name('admin.advanced-feeds.tmdb-clear');
+
+            Route::put('/admin/advanced-feeds/{feed}/items/{item}', [AdvancedFeedController::class, 'updateItem'])
+                ->name('admin.advanced-feeds.items.update');
+            Route::post('/admin/advanced-feeds/{feed}/items/reorder', [AdvancedFeedController::class, 'reorderItems'])
+                ->name('admin.advanced-feeds.items.reorder');
         });
     });

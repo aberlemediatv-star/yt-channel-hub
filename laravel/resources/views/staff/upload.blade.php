@@ -45,7 +45,7 @@
             <div class="cloud-panel" data-panel="gdrive" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--adm-border);">
                 <p class="adm-note" style="margin:0 0 0.5rem;">
                     @if($gdriveConnected)
-                        <a href="{{ url('/staff/oauth/gdrive/disconnect?channel_id='.$cid) }}">{{ Lang::t('staff.cloud_disconnect_gdrive') }}</a>
+                        <button type="submit" class="adm-btn-link" formaction="{{ url('/staff/oauth/gdrive/disconnect') }}" formmethod="post" formnovalidate>{{ Lang::t('staff.cloud_disconnect_gdrive') }}</button>
                     @else
                         <a href="{{ url('/staff/oauth/gdrive/start?channel_id='.$cid) }}">{{ Lang::t('staff.cloud_connect_gdrive') }}</a>
                     @endif
@@ -71,7 +71,7 @@
             <div class="cloud-panel" data-panel="dropbox" style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--adm-border);">
                 <p class="adm-note" style="margin:0 0 0.5rem;">
                     @if($dropboxConnected)
-                        <a href="{{ url('/staff/oauth/dropbox/disconnect?channel_id='.$cid) }}">{{ Lang::t('staff.cloud_disconnect_dropbox') }}</a>
+                        <button type="submit" class="adm-btn-link" formaction="{{ url('/staff/oauth/dropbox/disconnect') }}" formmethod="post" formnovalidate>{{ Lang::t('staff.cloud_disconnect_dropbox') }}</button>
                     @else
                         <a href="{{ url('/staff/oauth/dropbox/start?channel_id='.$cid) }}">{{ Lang::t('staff.cloud_connect_dropbox') }}</a>
                     @endif

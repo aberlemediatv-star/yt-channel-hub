@@ -24,9 +24,15 @@ final class Csrf
     {
         AdminAuth::startSession();
         $expected = $_SESSION[self::SESSION_KEY] ?? null;
-        if (!is_string($expected) || $expected === '' || !is_string($submitted) || $submitted === '') {
+        if (!is_string($expected) || $expected === '') {
+            error_log('csrf.validate: no expected token in session (session uninitialised?)');
+
             return false;
         }
+        if (!is_string($submitted) || $submitted === '') {
+            return false;
+        }
+
         return hash_equals($expected, $submitted);
     }
 

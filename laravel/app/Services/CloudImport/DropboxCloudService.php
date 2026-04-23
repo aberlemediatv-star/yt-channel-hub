@@ -6,6 +6,7 @@ namespace App\Services\CloudImport;
 
 use App\Models\SocialSetting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
 final class DropboxCloudService
@@ -65,7 +66,8 @@ final class DropboxCloudService
             'redirect_uri' => $this->redirectUri(),
         ]);
         if (! $res->successful()) {
-            throw new RuntimeException('dropbox_token: '.$res->body());
+            Log::warning('dropbox_token_exchange_failed', ['status' => $res->status(), 'body' => $res->body()]);
+            throw new RuntimeException('dropbox_token_exchange_failed');
         }
         /** @var array<string, mixed> $j */
         $j = $res->json();
@@ -110,7 +112,8 @@ final class DropboxCloudService
                 'limit' => 200,
             ]);
         if (! $res->successful()) {
-            throw new RuntimeException('dropbox_list: '.$res->body());
+            Log::warning('dropbox_list_failed', ['status' => $res->status(), 'body' => $res->body()]);
+            throw new RuntimeException('dropbox_list_failed');
         }
         /** @var array<string, mixed> $j */
         $j = $res->json();
@@ -194,19 +197,38 @@ final class DropboxCloudService
         }
         $token = $this->accessToken();
         $tmp = sys_get_temp_dir().'/'.uniqid('dbx_', true).'.'.strtolower(pathinfo($dropboxPath, PATHINFO_EXTENSION) ?: 'bin');
-        $res = Http::withToken($token)
-            ->withHeaders([
-                'Dropbox-API-Arg' => json_encode(['path' => $dropboxPath], JSON_THROW_ON_ERROR),
-            ])
-            ->withBody('', 'application/octet-stream')
-            ->post(self::CONTENT.'/files/download');
-        if (! $res->successful()) {
-            throw new RuntimeException('dropbox_download: '.$res->body());
+
+        $fh = fopen($tmp, 'wb');
+        if ($fh === false) {
+            throw new RuntimeException('dropbox_tmp_open');
         }
-        if (file_put_contents($tmp, $res->body()) === false) {
-            throw new RuntimeException('dropbox_write_fail');
+
+        try {
+            // Stream to disk so large (multi-GB) videos don't blow the PHP memory limit.
+            $res = Http::withToken($token)
+                ->withHeaders([
+                    'Dropbox-API-Arg' => json_encode(['path' => $dropboxPath], JSON_THROW_ON_ERROR),
+                    'Content-Type' => 'application/octet-stream',
+                ])
+                ->withOptions(['sink' => $fh])
+                ->post(self::CONTENT.'/files/download');
+
+            if (! $res->successful()) {
+                throw new RuntimeException('dropbox_download_failed');
+            }
+        } catch (\Throwable $e) {
+            if (is_resource($fh)) {
+                fclose($fh);
+            }
+            @unlink($tmp);
+            throw $e;
+        } finally {
+            if (is_resource($fh)) {
+                fclose($fh);
+            }
         }
-        if (filesize($tmp) === 0) {
+
+        if (! is_readable($tmp) || filesize($tmp) === 0) {
             @unlink($tmp);
             throw new RuntimeException('dropbox_empty');
         }
@@ -227,7 +249,8 @@ final class DropboxCloudService
             'client_secret' => (string) config('cloud_import.dropbox.app_secret'),
         ]);
         if (! $res->successful()) {
-            throw new RuntimeException('dropbox_refresh: '.$res->body());
+            Log::warning('dropbox_refresh_failed', ['status' => $res->status(), 'body' => $res->body()]);
+            throw new RuntimeException('dropbox_refresh_failed');
         }
         /** @var array<string, mixed> $j */
         $j = $res->json();

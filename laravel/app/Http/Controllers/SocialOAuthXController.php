@@ -8,6 +8,7 @@ use App\Support\Social\Base64Url;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 final class SocialOAuthXController
@@ -19,13 +20,11 @@ final class SocialOAuthXController
             abort(400, 'X Client ID fehlt (Settings).');
         }
 
-        $token = (string) $request->query('token', '');
         $state = Str::random(32);
         $verifier = Base64Url::encode(random_bytes(32));
         $challenge = Base64Url::encode(hash('sha256', $verifier, true));
 
         $request->session()->put('x_oauth_state', $state);
-        $request->session()->put('x_oauth_token', $token);
         $request->session()->put('x_pkce_verifier', $verifier);
 
         $redirectUri = rtrim((string) config('app.url', 'http://localhost'), '/').'/oauth/x/callback';
@@ -54,7 +53,6 @@ final class SocialOAuthXController
     public function callback(Request $request): RedirectResponse
     {
         $expectedState = (string) $request->session()->pull('x_oauth_state', '');
-        $token = (string) $request->session()->pull('x_oauth_token', '');
         $verifier = (string) $request->session()->pull('x_pkce_verifier', '');
 
         $state = (string) $request->query('state', '');
@@ -62,7 +60,7 @@ final class SocialOAuthXController
         $error = (string) $request->query('error', '');
 
         if ($error !== '') {
-            return redirect()->to('/admin/social/accounts?token='.urlencode($token));
+            return redirect()->to('/admin/social/accounts');
         }
         if ($expectedState === '' || $state === '' || ! hash_equals($expectedState, $state)) {
             abort(400, 'Ungültiger state.');
@@ -89,7 +87,8 @@ final class SocialOAuthXController
             ]);
 
         if (! $resp->ok()) {
-            abort(400, 'X token exchange fehlgeschlagen: '.$resp->body());
+            Log::warning('x_oauth_token_exchange_failed', ['status' => $resp->status(), 'body' => $resp->body()]);
+            abort(400, 'X token exchange fehlgeschlagen.');
         }
 
         $data = $resp->json();
@@ -138,6 +137,6 @@ final class SocialOAuthXController
             ));
         }
 
-        return redirect()->to('/admin/social/accounts?token='.urlencode($token));
+        return redirect()->to('/admin/social/accounts');
     }
 }

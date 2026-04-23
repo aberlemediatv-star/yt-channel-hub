@@ -5,7 +5,9 @@ namespace App\Http\Controllers\System;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use YtHub\Db;
+use YtHub\JobQueue;
 use YtHub\PublicHttp;
 
 final class HealthController extends Controller
@@ -42,10 +44,19 @@ final class HealthController extends Controller
         ];
 
         try {
-            Db::pdo()->query('SELECT 1');
+            $pdo = Db::pdo();
+            $pdo->query('SELECT 1');
             $checks['database'] = true;
+
+            try {
+                $checks['jobs'] = JobQueue::stats($pdo);
+            } catch (\Throwable $e) {
+                Log::warning('health_jobs_stats_failed', ['error' => $e->getMessage()]);
+                $checks['jobs_error'] = 'see server log';
+            }
         } catch (\Throwable $e) {
-            $checks['database_error'] = $e->getMessage();
+            Log::error('health_db_check_failed', ['error' => $e->getMessage()]);
+            $checks['database_error'] = 'see server log';
         }
 
         $logDir = storage_path('logs');
@@ -54,7 +65,8 @@ final class HealthController extends Controller
             $checks['logs_writable'] = @mkdir($logDir, 0755, true) && is_writable($logDir);
         }
 
-        $ok = $checks['database'] === true;
+        $ok = $checks['database'] === true
+            && (! isset($checks['jobs']['stalled_running']) || $checks['jobs']['stalled_running'] === 0);
 
         return response()->json(['ok' => $ok, 'checks' => $checks], $ok ? 200 : 503, [], JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
     }

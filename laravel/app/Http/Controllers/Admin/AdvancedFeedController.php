@@ -74,9 +74,7 @@ final class AdvancedFeedController extends Controller
             'is_active' => isset($data['is_active']),
         ]);
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', 'Feed erstellt.');
     }
 
@@ -118,18 +116,15 @@ final class AdvancedFeedController extends Controller
             'is_active' => isset($data['is_active']),
         ]);
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', 'Feed aktualisiert.');
     }
 
     public function destroy(Request $request, AdvancedFeed $feed): RedirectResponse
     {
         $feed->delete();
-        $token = (string) $request->query('token', '');
 
-        return redirect()->to('/admin/advanced-feeds?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds')
             ->with('status', 'Feed gelöscht.');
     }
 
@@ -161,9 +156,7 @@ final class AdvancedFeedController extends Controller
             ['sort_order' => $maxSort + 1],
         );
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', 'Video hinzugefügt.');
     }
 
@@ -176,9 +169,7 @@ final class AdvancedFeedController extends Controller
             $msg = 'Video entfernt.';
         }
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', $msg);
     }
 
@@ -197,6 +188,10 @@ final class AdvancedFeedController extends Controller
     /** Apply TMDB data to an item. */
     public function tmdbApply(Request $request, AdvancedFeed $feed, AdvancedFeedItem $item): RedirectResponse
     {
+        if ($item->advanced_feed_id !== $feed->id) {
+            abort(404);
+        }
+
         $data = $request->validate([
             'tmdb_id' => ['required', 'integer', 'min:1'],
             'tmdb_type' => ['required', 'in:movie,tv'],
@@ -206,9 +201,7 @@ final class AdvancedFeedController extends Controller
         $details = $client->details((int) $data['tmdb_id'], $data['tmdb_type'], $feed->language);
 
         if ($details === null) {
-            $token = (string) $request->query('token', '');
-
-            return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+            return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
                 ->with('status', 'TMDB hat keine Daten zurückgegeben.');
         }
 
@@ -221,9 +214,7 @@ final class AdvancedFeedController extends Controller
             'tmdb_language' => $feed->language,
         ]);
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', 'TMDB-Daten übernommen.');
     }
 
@@ -241,10 +232,70 @@ final class AdvancedFeedController extends Controller
             ]);
         }
 
-        $token = (string) $request->query('token', '');
-
-        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit?token='.urlencode($token))
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
             ->with('status', 'TMDB-Daten entfernt.');
+    }
+
+    /**
+     * Save a manual custom title/description override for an item.
+     */
+    public function updateItem(Request $request, AdvancedFeed $feed, AdvancedFeedItem $item): RedirectResponse
+    {
+        if ($item->advanced_feed_id !== $feed->id) {
+            abort(404);
+        }
+
+        $data = $request->validate([
+            'custom_title' => ['nullable', 'string', 'max:255'],
+            'custom_description' => ['nullable', 'string', 'max:4000'],
+        ]);
+
+        $item->update([
+            'custom_title' => trim((string) ($data['custom_title'] ?? '')) !== ''
+                ? trim((string) $data['custom_title'])
+                : null,
+            'custom_description' => trim((string) ($data['custom_description'] ?? '')) !== ''
+                ? trim((string) $data['custom_description'])
+                : null,
+        ]);
+
+        return redirect()->to('/admin/advanced-feeds/'.$feed->id.'/edit')
+            ->with('status', 'Item aktualisiert.');
+    }
+
+    /**
+     * Reorder items by providing a list of item IDs in their new order.
+     * Accepts JSON body {"order": [id, id, id, ...]}.
+     */
+    public function reorderItems(Request $request, AdvancedFeed $feed): JsonResponse
+    {
+        $data = $request->validate([
+            'order' => ['required', 'array', 'min:1'],
+            'order.*' => ['integer', 'min:1'],
+        ]);
+
+        $orderIds = array_values(array_unique(array_map('intval', $data['order'])));
+
+        $known = AdvancedFeedItem::query()
+            ->where('advanced_feed_id', $feed->id)
+            ->whereIn('id', $orderIds)
+            ->pluck('id')
+            ->all();
+        $knownMap = array_flip($known);
+
+        $sort = 1;
+        foreach ($orderIds as $id) {
+            if (! isset($knownMap[$id])) {
+                continue;
+            }
+            AdvancedFeedItem::query()
+                ->where('advanced_feed_id', $feed->id)
+                ->where('id', $id)
+                ->update(['sort_order' => $sort]);
+            $sort++;
+        }
+
+        return response()->json(['ok' => true, 'count' => $sort - 1]);
     }
 
     /**

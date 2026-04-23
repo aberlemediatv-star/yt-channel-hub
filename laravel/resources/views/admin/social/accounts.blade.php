@@ -8,26 +8,16 @@
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">Social Accounts</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/social/settings?token={{ urlencode($token) }}">Settings</a>
-        <a href="/admin/social/activate?token={{ urlencode($token) }}">Aktivierung</a>
-        <a href="/admin/social/posts?token={{ urlencode($token) }}">Posts</a>
+@include('admin.partials.header')
+<main class="adm-main" role="main">
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;">
         @if(!empty($xOAuthReady))
             <a class="adm-btn" href="{{ route('oauth.x.start', ['token' => $token]) }}">X verbinden</a>
         @endif
         @if(!empty($tiktokOAuthReady))
             <a class="adm-btn" href="{{ route('oauth.tiktok.start', ['token' => $token]) }}">TikTok verbinden</a>
         @endif
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
-<main class="adm-main" role="main">
+    </div>
 
     @if(session('status'))
         <div class="adm-flash adm-flash-ok">{{ session('status') }}</div>
@@ -55,7 +45,7 @@
                 <td style="max-width:320px;word-break:break-word;">{{ $a->scopes }}</td>
                 <td>{{ $a->token_expires_at }}</td>
                 <td>
-                    <form method="post" action="{{ route('admin.social.accounts.disconnect', $a) }}?token={{ urlencode($token) }}" style="margin:0;" onsubmit="return confirm('Diesen Account wirklich entfernen?');">
+                    <form method="post" action="{{ route('admin.social.accounts.disconnect', $a) }}" style="margin:0;" onsubmit="return confirm('Diesen Account wirklich entfernen?');">
                         @csrf
                         <button type="submit" class="adm-btn adm-btn-secondary" style="color:var(--adm-err);">Trennen</button>
                     </form>

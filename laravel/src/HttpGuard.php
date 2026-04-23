@@ -7,6 +7,7 @@ namespace YtHub;
 final class HttpGuard
 {
     private const COOKIE_NAME = 'yt_hub_internal';
+    private const SESSION_MARKER_KEY = '_yt_hub_internal_ok';
 
     public static function requireInternalTokenOrCli(): void
     {
@@ -24,7 +25,7 @@ final class HttpGuard
         self::assertInternalAuth(true, false);
     }
 
-    /** Backend / Analytics: Token, Cookie oder Admin-Session. */
+    /** Backend / Analytics: Token, Session-Marker oder Admin-Session. */
     public static function requireInternalTokenCookieOrCliForAdmin(): void
     {
         self::assertInternalAuth(true, true);
@@ -89,25 +90,24 @@ final class HttpGuard
             return 503;
         }
 
-        if ($allowCookie && isset($_COOKIE[self::COOKIE_NAME])) {
-            $c = (string) $_COOKIE[self::COOKIE_NAME];
-            if ($c !== '' && hash_equals($expected, $c)) {
+        // Session-bound marker (set after a previous successful token auth). No
+        // cookie containing the raw token anywhere on the wire.
+        if ($allowCookie) {
+            if (session_status() === PHP_SESSION_NONE) {
+                AdminAuth::startSession();
+            }
+            if (! empty($_SESSION[self::SESSION_MARKER_KEY])) {
                 return null;
             }
         }
 
-        $given = (string) ($_GET['token'] ?? $_SERVER['HTTP_X_INTERNAL_TOKEN'] ?? '');
+        $given = (string) ($_SERVER['HTTP_X_INTERNAL_TOKEN'] ?? $_GET['token'] ?? '');
         if ($given !== '' && hash_equals($expected, $given)) {
             if ($allowCookie) {
-                $secure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-                    || ((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
-                setcookie(self::COOKIE_NAME, $expected, [
-                    'expires' => time() + 86400 * 30,
-                    'path' => '/',
-                    'secure' => $secure,
-                    'httponly' => true,
-                    'samesite' => 'Strict',
-                ]);
+                if (session_status() === PHP_SESSION_NONE) {
+                    AdminAuth::startSession();
+                }
+                $_SESSION[self::SESSION_MARKER_KEY] = true;
             }
 
             return null;

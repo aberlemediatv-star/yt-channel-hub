@@ -31,7 +31,7 @@ final class SocialAccountsController extends Controller
         $account->delete();
 
         return redirect()
-            ->to('/admin/social/accounts?token='.urlencode((string) $request->query('token', '')))
+            ->to('/admin/social/accounts')
             ->with('status', 'Account entfernt.');
     }
 }

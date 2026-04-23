@@ -15,20 +15,12 @@
     </style>
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">MRSS Feeds (FAST)</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/advanced-feeds?token={{ urlencode($token) }}">Advanced Feeds</a>
-        <a href="/admin/social/activate?token={{ urlencode($token) }}">Social</a>
-        <a href="{{ $appUrl }}/feed/mrss" target="_blank">Feed-Index (XML)</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">MRSS Feeds (FAST)</h1>
+    <p class="adm-actions">
+        <a class="adm-btn adm-btn-secondary" href="{{ $appUrl }}/feed/mrss" target="_blank" rel="noopener">Feed-Index (XML)</a>
+    </p>
     <p class="adm-note">
         Jeder aktive Kanal hat eine eigene MRSS-Feed-URL. Diese URL kann an FAST-Provider
         (Pluto TV, Samsung TV Plus, Rakuten TV, etc.) übermittelt werden.

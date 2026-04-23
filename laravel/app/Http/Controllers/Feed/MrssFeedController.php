@@ -26,7 +26,7 @@ final class MrssFeedController extends Controller
             abort(404, 'Channel nicht gefunden.');
         }
 
-        $limit = min((int) ($request->query('limit', 200)), 500);
+        $limit = max(1, min(500, (int) $request->query('limit', 200)));
         $videos = $this->loadVideosForFeed($pdo, (int) $channel['id'], $limit);
 
         $appUrl = rtrim((string) config('app.url', ''), '/');

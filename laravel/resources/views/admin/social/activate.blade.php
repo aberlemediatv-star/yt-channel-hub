@@ -1,5 +1,6 @@
+@php use YtHub\Lang; @endphp
 <!doctype html>
-<html lang="{{ \YtHub\Lang::code() }}">
+<html lang="{{ Lang::code() }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,20 +15,9 @@
     </style>
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">Social Aktivierung</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/social/settings?token={{ urlencode($token) }}">Settings</a>
-        <a href="/admin/social/accounts?token={{ urlencode($token) }}">Accounts</a>
-        <a href="/admin/social/posts?token={{ urlencode($token) }}">Posts</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">{{ Lang::t('admin.nav.social_activate') }}</h1>
 
     <div class="check-card">
         <h2>Grundchecks</h2>
@@ -49,8 +39,17 @@
         <h2>Instagram (Meta)</h2>
         <div style="font-size:0.86rem;">Keys in DB: @if($checks['meta_keys']) <span class="ok">OK</span> @else <span class="bad">FEHLT</span> @endif</div>
         <p class="adm-note" style="margin-top:0.5rem;">
-            Später braucht ihr zusätzlich App Review + Business Account. Redirect: <code>{{ $redirects['meta'] !== '' ? $redirects['meta'] : '(APP_URL fehlt)' }}</code>
+            Redirect URI (im Meta Developer Portal eintragen): <code>{{ $redirects['meta'] !== '' ? $redirects['meta'] : '(APP_URL fehlt)' }}</code>
         </p>
+        @if(!empty($checks['meta_keys']))
+            <div style="margin-top:0.65rem;">
+                <a class="adm-btn" href="{{ route('oauth.meta.start', ['token' => $token]) }}">Mit Instagram verbinden</a>
+            </div>
+        @endif
+        <ul style="color:var(--adm-muted);font-size:0.82rem;margin-top:0.5rem;padding-left:1.25rem;">
+            <li>OAuth via Facebook Login (Instagram-Business-Account + verknüpfte Facebook-Seite erforderlich).</li>
+            <li>Video-Publishing: öffentliche <code>video_url</code> im Payload erforderlich (IG akzeptiert keinen Direkt-Upload).</li>
+        </ul>
     </div>
 
     <div class="check-card">
@@ -98,6 +97,15 @@
         <p class="adm-note" style="margin-top:0.5rem;">
             Redirect URI: <code>{{ $redirects['facebook'] !== '' ? $redirects['facebook'] : '(APP_URL fehlt)' }}</code>
         </p>
+        @if(!empty($checks['facebook_enabled']) && !empty($checks['facebook_keys']))
+            <div style="margin-top:0.65rem;">
+                <a class="adm-btn" href="{{ route('oauth.facebook.start', ['token' => $token]) }}">Mit Facebook verbinden</a>
+            </div>
+        @endif
+        <ul style="color:var(--adm-muted);font-size:0.82rem;margin-top:0.5rem;padding-left:1.25rem;">
+            <li>Speichert pro Page ein SocialAccount (<code>platform=facebook</code>) + bei verknüpftem IG-Business auch ein <code>platform=instagram</code>-Konto.</li>
+            <li>Video-Publish: Graph v19 <code>/{page-id}/videos</code> mit <code>source</code>-Multipart.</li>
+        </ul>
     </div>
 
     <div class="check-card">
@@ -112,6 +120,15 @@
         <p class="adm-note" style="margin-top:0.5rem;">
             Redirect URI: <code>{{ $redirects['linkedin'] !== '' ? $redirects['linkedin'] : '(APP_URL fehlt)' }}</code>
         </p>
+        @if(!empty($checks['linkedin_enabled']) && !empty($checks['linkedin_keys']))
+            <div style="margin-top:0.65rem;">
+                <a class="adm-btn" href="{{ route('oauth.linkedin.start', ['token' => $token]) }}">Mit LinkedIn verbinden</a>
+            </div>
+        @endif
+        <ul style="color:var(--adm-muted);font-size:0.82rem;margin-top:0.5rem;padding-left:1.25rem;">
+            <li>Scopes: <code>openid profile email w_member_social</code>.</li>
+            <li>Video-Publish: Assets API v2 (registerUpload → PUT → ugcPosts).</li>
+        </ul>
     </div>
 </main>
 </body>

@@ -56,7 +56,7 @@ final class ApiKeysController extends Controller
         SocialSetting::setEncrypted('google.redirect_uri', (string) ($data['google_redirect_uri'] ?? ''));
 
         return redirect()
-            ->to('/admin/api-keys?token='.urlencode((string) $request->query('token', '')))
+            ->to('/admin/api-keys')
             ->with('status', 'Gespeichert.');
     }
 

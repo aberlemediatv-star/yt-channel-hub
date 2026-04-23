@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -32,14 +33,24 @@ final class LoginController extends Controller
                 $error = Lang::t('admin.login_error_csrf');
             } else {
                 $pw = (string) $request->input('password', '');
-                if (AdminAuth::login($pw)) {
+                $ip = (string) $request->ip();
+                if (\App\Support\LoginLockout::isLocked('admin_ip', $ip)) {
+                    $error = Lang::t('admin.login_error_locked');
+                    AuditLog::systemAction('admin.login_locked', 'admin', null, ['ip' => $ip]);
+                } elseif (AdminAuth::login($pw)) {
+                    \App\Support\LoginLockout::clear('admin_ip', $ip);
+                    AuditLog::adminAction('admin.login', 'admin', null, ['user_agent' => substr((string) $request->userAgent(), 0, 256)]);
+
                     return redirect('/admin/index.php');
+                } else {
+                    Log::warning('admin_login_failed', [
+                        'ip' => $ip,
+                        'user_agent' => substr((string) $request->userAgent(), 0, 512),
+                    ]);
+                    \App\Support\LoginLockout::registerFailure('admin_ip', $ip);
+                    AuditLog::adminAction('admin.login_failed', 'admin', null, ['user_agent' => substr((string) $request->userAgent(), 0, 256)]);
+                    $error = Lang::t('admin.login_error');
                 }
-                Log::warning('admin_login_failed', [
-                    'ip' => $request->ip(),
-                    'user_agent' => substr((string) $request->userAgent(), 0, 512),
-                ]);
-                $error = Lang::t('admin.login_error');
             }
         }
 
@@ -58,6 +69,7 @@ final class LoginController extends Controller
             abort(403);
         }
 
+        AuditLog::adminAction('admin.logout');
         AdminAuth::logout();
 
         return redirect('/admin/login.php');

@@ -6,6 +6,9 @@ use App\Http\Controllers\Admin\SocialPostsController;
 use App\Http\Controllers\Admin\SocialSettingsController;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\LegalController;
+use App\Http\Controllers\SocialOAuthFacebookController;
+use App\Http\Controllers\SocialOAuthLinkedInController;
+use App\Http\Controllers\SocialOAuthMetaController;
 use App\Http\Controllers\SocialOAuthTikTokController;
 use App\Http\Controllers\SocialOAuthXController;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
@@ -38,10 +41,16 @@ Route::middleware(['web'])->group(function (): void {
     // OAuth callbacks must stay public (provider redirect); start is gated like other admin/social URLs.
     Route::get('/oauth/x/callback', [SocialOAuthXController::class, 'callback'])->name('oauth.x.callback');
     Route::get('/oauth/tiktok/callback', [SocialOAuthTikTokController::class, 'callback'])->name('oauth.tiktok.callback');
+    Route::get('/oauth/facebook/callback', [SocialOAuthFacebookController::class, 'callback'])->name('oauth.facebook.callback');
+    Route::get('/oauth/meta/callback', [SocialOAuthMetaController::class, 'callback'])->name('oauth.meta.callback');
+    Route::get('/oauth/linkedin/callback', [SocialOAuthLinkedInController::class, 'callback'])->name('oauth.linkedin.callback');
 
     Route::middleware(['internal.token'])
         ->group(function (): void {
             Route::get('/oauth/x/start', [SocialOAuthXController::class, 'start'])->name('oauth.x.start');
             Route::get('/oauth/tiktok/start', [SocialOAuthTikTokController::class, 'start'])->name('oauth.tiktok.start');
+            Route::get('/oauth/facebook/start', [SocialOAuthFacebookController::class, 'start'])->name('oauth.facebook.start');
+            Route::get('/oauth/meta/start', [SocialOAuthMetaController::class, 'start'])->name('oauth.meta.start');
+            Route::get('/oauth/linkedin/start', [SocialOAuthLinkedInController::class, 'start'])->name('oauth.linkedin.start');
         });
 });

@@ -3,7 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\SocialPost;
-use App\Services\Social\TikTokPublisher;
+use App\Services\Social\SocialPostDispatcher;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,27 +16,13 @@ final class PublishToTikTokJob implements ShouldQueue
 
     public function __construct(public int $socialPostId) {}
 
-    public function handle(TikTokPublisher $pub): void
+    public function handle(SocialPostDispatcher $dispatcher): void
     {
         /** @var SocialPost|null $post */
         $post = SocialPost::query()->whereKey($this->socialPostId)->first();
         if ($post === null) {
             return;
         }
-
-        $post->status = 'processing';
-        $post->error_message = null;
-        $post->save();
-
-        try {
-            $externalId = $pub->publishVideoPost($post);
-            $post->status = 'published';
-            $post->external_id = $externalId;
-            $post->save();
-        } catch (\Throwable $e) {
-            $post->status = 'failed';
-            $post->error_message = $e->getMessage();
-            $post->save();
-        }
+        $dispatcher->publish($post);
     }
 }

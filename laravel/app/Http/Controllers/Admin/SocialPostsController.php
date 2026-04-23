@@ -27,28 +27,48 @@ final class SocialPostsController extends Controller
         $data = $request->validate([
             'text' => ['nullable', 'string', 'max:250'],
             'youtube_video_id' => ['nullable', 'string', 'max:64'],
+            'scheduled_for' => ['nullable', 'date'],
         ]);
 
         $text = trim((string) ($data['text'] ?? ''));
         $vid = trim((string) ($data['youtube_video_id'] ?? ''));
         if ($text === '' && $vid === '') {
             return redirect()
-                ->to('/admin/social/posts?token='.urlencode((string) $request->query('token', '')))
+                ->to('/admin/social/posts')
                 ->withErrors(['text' => 'Text und/oder YouTube-Video-ID angeben.']);
         }
+
+        $scheduledFor = null;
+        if (! empty($data['scheduled_for'])) {
+            try {
+                $scheduledFor = new \DateTimeImmutable((string) $data['scheduled_for']);
+            } catch (\Throwable) {
+                $scheduledFor = null;
+            }
+        }
+
+        $immediate = $scheduledFor === null || $scheduledFor->getTimestamp() <= time();
+        $status = $immediate ? SocialPost::STATUS_QUEUED : SocialPost::STATUS_SCHEDULED;
 
         $post = SocialPost::query()->create([
             'platform' => 'x',
             'youtube_video_id' => $vid !== '' ? $vid : null,
             'local_video_path' => null,
-            'status' => 'queued',
+            'status' => $status,
             'payload' => $text !== '' ? ['text' => $text] : null,
+            'scheduled_for' => $scheduledFor ? $scheduledFor->format('Y-m-d H:i:s') : null,
+            'max_attempts' => 5,
         ]);
 
-        PublishToXJob::dispatch($post->id);
+        if ($immediate) {
+            PublishToXJob::dispatch($post->id);
+            $msg = 'X-Publish Job angestoßen — Status in der Tabelle prüfen.';
+        } else {
+            $msg = 'X-Post geplant für ' . $scheduledFor->format('Y-m-d H:i') . ' — Scheduler (social:run-due) nimmt ihn auf.';
+        }
 
         return redirect()
-            ->to('/admin/social/posts?token='.urlencode((string) $request->query('token', '')))
-            ->with('status', 'X-Publish Job angestoßen — Status in der Tabelle prüfen.');
+            ->to('/admin/social/posts')
+            ->with('status', $msg);
     }
 }

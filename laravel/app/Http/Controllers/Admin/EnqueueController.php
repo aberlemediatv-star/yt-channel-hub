@@ -60,8 +60,11 @@ final class EnqueueController extends Controller
                     throw new \InvalidArgumentException('Unbekannter Job-Typ');
             }
             AdminFlash::success('Job eingereiht.');
-        } catch (\Throwable $e) {
+        } catch (\InvalidArgumentException $e) {
             AdminFlash::error($e->getMessage());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('enqueue_failed', ['error' => $e->getMessage()]);
+            AdminFlash::error('Einreihen fehlgeschlagen. Details stehen im Server-Log.');
         }
 
         return redirect('/admin/index.php');

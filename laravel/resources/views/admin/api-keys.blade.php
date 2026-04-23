@@ -11,20 +11,9 @@
     <link rel="stylesheet" href="{{ asset('assets/admin.css') }}">
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="{{ Lang::t('public.brand') }}" class="adm-logo">
-        <span class="adm-title">{{ Lang::t('admin.api_keys_title') }}</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/social/settings?token={{ urlencode(request()->query('token', '')) }}">{{ Lang::t('admin.api_keys_nav_social') }}</a>
-        <a href="/admin/mrss-feeds?token={{ urlencode(request()->query('token', '')) }}">{{ Lang::t('admin.api_keys_nav_mrss') }}</a>
-        <a href="/admin/advanced-feeds?token={{ urlencode(request()->query('token', '')) }}">{{ Lang::t('admin.api_keys_nav_advanced') }}</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">{{ Lang::t('admin.api_keys_title') }}</h1>
     <p class="adm-note">
         {!! Lang::tRich('admin.api_keys_intro') !!}
     </p>

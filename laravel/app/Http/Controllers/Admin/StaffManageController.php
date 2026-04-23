@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,21 +37,32 @@ final class StaffManageController extends Controller
                     $pw = (string) $request->input('password', '');
                     if ($u === '' || $pw === '') {
                         AdminFlash::error(Lang::t('admin.staff_flash_user_pass'));
+                    } elseif (mb_strlen($pw) < 12) {
+                        AdminFlash::error(Lang::t('admin.staff_flash_password_short'));
                     } elseif ($repo->findByUsername($u) !== null) {
                         AdminFlash::error(Lang::t('admin.staff_flash_user_taken'));
                     } else {
-                        $hash = password_hash($pw, PASSWORD_DEFAULT);
-                        if ($hash === false) {
-                            AdminFlash::error(Lang::t('admin.staff_flash_hash'));
-                        } else {
-                            $repo->create($u, $hash);
-                            AdminFlash::success(Lang::t('admin.staff_flash_created'));
-                        }
+                        $newId = $repo->create($u, password_hash($pw, PASSWORD_DEFAULT));
+                        AuditLog::adminAction('staff.create', 'staff', $newId, ['username' => $u]);
+                        AdminFlash::success(Lang::t('admin.staff_flash_created'));
+                    }
+                } elseif ($action === 'reset_password') {
+                    $id = (int) $request->input('id', 0);
+                    $pw = (string) $request->input('password', '');
+                    if ($id <= 0 || $repo->findById($id) === null) {
+                        AdminFlash::error(Lang::t('admin.staff_not_found'));
+                    } elseif ($pw === '' || mb_strlen($pw) < 12) {
+                        AdminFlash::error(Lang::t('admin.staff_flash_password_short'));
+                    } else {
+                        $repo->updatePasswordHash($id, password_hash($pw, PASSWORD_DEFAULT));
+                        AuditLog::adminAction('staff.reset_password', 'staff', $id);
+                        AdminFlash::success(Lang::t('admin.staff_flash_password_reset'));
                     }
                 } elseif ($action === 'delete') {
                     $id = (int) $request->input('id', 0);
                     if ($id > 0) {
                         $repo->delete($id);
+                        AuditLog::adminAction('staff.delete', 'staff', $id);
                         AdminFlash::success(Lang::t('admin.staff_flash_deleted'));
                     }
                 }

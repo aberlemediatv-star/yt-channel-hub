@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Staff\AccountController;
 use App\Http\Controllers\Staff\CloudFilesController;
 use App\Http\Controllers\Staff\DashboardController;
 use App\Http\Controllers\Staff\DropboxOAuthController;
@@ -37,11 +38,14 @@ Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.staff.auth'])
         Route::match(['get', 'post'], '/staff/videos.php', [VideosController::class, 'index']);
         Route::get('/staff/revenue.php', [RevenueController::class, 'index']);
 
+        Route::get('/staff/account', [AccountController::class, 'show']);
+        Route::post('/staff/account/password', [AccountController::class, 'updatePassword']);
+
         Route::get('/staff/oauth/gdrive/start', [GdriveOAuthController::class, 'start']);
         Route::get('/staff/oauth/gdrive/callback', [GdriveOAuthController::class, 'callback']);
-        Route::get('/staff/oauth/gdrive/disconnect', [GdriveOAuthController::class, 'disconnect']);
+        Route::post('/staff/oauth/gdrive/disconnect', [GdriveOAuthController::class, 'disconnect']);
         Route::get('/staff/oauth/dropbox/start', [DropboxOAuthController::class, 'start']);
         Route::get('/staff/oauth/dropbox/callback', [DropboxOAuthController::class, 'callback']);
-        Route::get('/staff/oauth/dropbox/disconnect', [DropboxOAuthController::class, 'disconnect']);
+        Route::post('/staff/oauth/dropbox/disconnect', [DropboxOAuthController::class, 'disconnect']);
         Route::get('/staff/cloud/files', [CloudFilesController::class, 'index']);
     });

@@ -73,6 +73,54 @@ final class JobQueue
         $st->execute([mb_substr($message, 0, 1000), $jobId]);
     }
 
+    /**
+     * Rescue jobs that have been stuck in 'running' for too long. Returns the
+     * number of rows that were reset to 'pending'.
+     */
+    public static function recoverStalled(PDO $pdo, int $stalledSeconds = 1800): int
+    {
+        $st = $pdo->prepare(
+            "UPDATE jobs
+             SET status = 'pending', started_at = NULL,
+                 error_message = CONCAT(COALESCE(error_message, ''), ' [auto-requeued]')
+             WHERE status = 'running' AND started_at IS NOT NULL
+                   AND started_at < (NOW() - INTERVAL ? SECOND)"
+        );
+        $st->bindValue(1, max(60, $stalledSeconds), PDO::PARAM_INT);
+        $st->execute();
+
+        return $st->rowCount();
+    }
+
+    /**
+     * @return array{pending:int, running:int, failed:int, oldest_pending_age_s:?int, stalled_running:int}
+     */
+    public static function stats(PDO $pdo, int $stalledSeconds = 1800): array
+    {
+        $out = ['pending' => 0, 'running' => 0, 'failed' => 0, 'oldest_pending_age_s' => null, 'stalled_running' => 0];
+        $q = $pdo->query("SELECT status, COUNT(*) AS n FROM jobs GROUP BY status");
+        foreach ($q->fetchAll() as $r) {
+            $s = (string) $r['status'];
+            if (isset($out[$s])) {
+                $out[$s] = (int) $r['n'];
+            }
+        }
+
+        $old = $pdo->query("SELECT UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(MIN(created_at)) AS age FROM jobs WHERE status = 'pending'");
+        $row = $old->fetch();
+        if ($row && $row['age'] !== null) {
+            $out['oldest_pending_age_s'] = (int) $row['age'];
+        }
+
+        $stal = $pdo->prepare("SELECT COUNT(*) AS n FROM jobs WHERE status = 'running' AND started_at IS NOT NULL AND started_at < (NOW() - INTERVAL ? SECOND)");
+        $stal->bindValue(1, max(60, $stalledSeconds), PDO::PARAM_INT);
+        $stal->execute();
+        $row = $stal->fetch();
+        $out['stalled_running'] = $row ? (int) $row['n'] : 0;
+
+        return $out;
+    }
+
     /** @return list<array<string, mixed>> */
     public static function listRecent(PDO $pdo, int $limit = 30): array
     {

@@ -5,6 +5,7 @@ namespace App\Services\Social;
 use App\Models\SocialAccount;
 use App\Models\SocialSetting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class XAccessTokenRefresher
 {
@@ -46,7 +47,8 @@ final class XAccessTokenRefresher
             ]);
 
         if (! $resp->successful()) {
-            throw new \RuntimeException('X token refresh fehlgeschlagen: '.$resp->body());
+            Log::warning('x_token_refresh_failed', ['status' => $resp->status(), 'body' => $resp->body()]);
+            throw new \RuntimeException('X token refresh fehlgeschlagen.');
         }
 
         /** @var array<string, mixed> $data */

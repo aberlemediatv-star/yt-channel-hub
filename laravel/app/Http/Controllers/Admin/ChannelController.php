@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Support\AuditLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -68,9 +69,11 @@ final class ChannelController extends Controller
         try {
             if ($id > 0) {
                 $repo->update($id, $slug, $title, $yt, $sort, $active);
+                AuditLog::adminAction('channel.update', 'channel', $id, compact('slug', 'title', 'active', 'sort'));
                 AdminFlash::success('Kanal gespeichert.');
             } else {
                 $repo->insert($slug, $title, $yt, $sort, $active);
+                AuditLog::adminAction('channel.create', 'channel', null, compact('slug', 'title', 'active'));
                 AdminFlash::success('Kanal angelegt.');
             }
         } catch (\PDOException $e) {
@@ -108,6 +111,7 @@ final class ChannelController extends Controller
         }
 
         (new ChannelRepository(Db::pdo()))->delete($id);
+        AuditLog::adminAction('channel.delete', 'channel', $id);
         AdminFlash::success('Kanal gelöscht.');
 
         return redirect('/admin/index.php');

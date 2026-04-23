@@ -13,19 +13,12 @@
     </style>
 </head>
 <body class="adm-body">
-<header class="adm-head" role="banner">
-    <a href="/admin/index.php" style="text-decoration:none;display:inline-flex;align-items:center;gap:.65rem;">
-        <img src="{{ asset('assets/imh-group-logo.svg') }}" alt="IMH Group" class="adm-logo">
-        <span class="adm-title">Advanced Feeds</span>
-    </a>
-    <nav class="adm-nav">
-        <a href="/admin/index.php">Dashboard</a>
-        <a href="/admin/advanced-feeds/create?token={{ urlencode($token) }}" class="adm-btn" style="font-size:0.82rem;">Neuer Feed</a>
-        <a href="/admin/mrss-feeds?token={{ urlencode($token) }}">Einfache MRSS-Feeds</a>
-        @include('site.partials.lang-switcher-inline')
-    </nav>
-</header>
+@include('admin.partials.header')
 <main class="adm-main" role="main">
+    <h1 class="adm-h1">Advanced Feeds</h1>
+    <p class="adm-actions">
+        <a class="adm-btn" href="{{ url('/admin/advanced-feeds/create') }}">Neuer Feed</a>
+    </p>
 
     @if(session('status'))
         <div class="adm-flash adm-flash-ok">{{ session('status') }}</div>

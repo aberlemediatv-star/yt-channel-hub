@@ -145,7 +145,8 @@ final class UploadController extends Controller
                                     } elseif ($code === 'caption_lang') {
                                         $error = Lang::t('backend.upload_error_caption_lang');
                                     } else {
-                                        $error = $e->getMessage();
+                                        \Illuminate\Support\Facades\Log::warning('staff_caption_prepare_failed', ['code' => $code]);
+                                        $error = Lang::t('staff.upload_error_generic');
                                     }
                                 }
                                 if ($error === '') {
@@ -189,7 +190,8 @@ final class UploadController extends Controller
                                         if ($captionPrepared !== null) {
                                             @unlink($captionPrepared['path']);
                                         }
-                                        $error = $e->getMessage();
+                                        \Illuminate\Support\Facades\Log::error('staff_upload_failed', ['error' => $e->getMessage()]);
+                                        $error = Lang::t('staff.upload_error_generic');
                                     }
                                 }
                             } finally {

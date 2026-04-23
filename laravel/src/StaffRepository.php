@@ -58,6 +58,12 @@ final class StaffRepository
         $st->execute([$id]);
     }
 
+    public function updatePasswordHash(int $id, string $passwordHash): void
+    {
+        $st = $this->pdo->prepare('UPDATE staff_users SET password_hash = ? WHERE id = ?');
+        $st->execute([$passwordHash, $id]);
+    }
+
     /**
      * @return array<string, bool>
      */

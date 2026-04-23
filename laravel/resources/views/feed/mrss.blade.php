@@ -28,7 +28,9 @@ use App\Support\Feed\ISODurationHelper;
     $ytUrl = 'https://www.youtube.com/watch?v=' . rawurlencode((string) $v['video_id']);
     $seconds = ISODurationHelper::toSeconds($v['duration_iso'] ?? null);
     $thumb = $v['thumbnail_url'] ?? '';
-    $pubDate = $v['published_at'] ? (new DateTime($v['published_at']))->format('D, d M Y H:i:s') . ' +0000' : $buildDate;
+    $pubDate = $v['published_at']
+        ? (new DateTime((string) $v['published_at'], new DateTimeZone('UTC')))->format('D, d M Y H:i:s') . ' +0000'
+        : $buildDate;
     $desc = trim((string) ($v['description'] ?? ''));
     if ($desc === '') { $desc = $v['title']; }
 @endphp

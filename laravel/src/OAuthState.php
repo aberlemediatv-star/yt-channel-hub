@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace YtHub;
 
 /**
- * Signierter OAuth-2-state (Kanal-ID + HMAC) gegen CSRF; reine Zahl bleibt als Legacy erlaubt.
+ * Signierter OAuth-2-state (Kanal-ID + HMAC) gegen CSRF.
  */
 final class OAuthState
 {
@@ -39,6 +39,9 @@ final class OAuthState
         return $id;
     }
 
+    /**
+     * Must have a real configured secret; refuse to run with a guessable fallback.
+     */
     private static function secret(): string
     {
         $cfg = app_config();
@@ -47,7 +50,12 @@ final class OAuthState
             return $t;
         }
         $k = (string) ($cfg['security']['encryption_key'] ?? '');
+        if ($k !== '') {
+            return $k;
+        }
 
-        return $k !== '' ? $k : 'yt-hub-oauth-state';
+        throw new \RuntimeException(
+            'OAuth-State benötigt security.internal_token oder security.encryption_key in der Konfiguration.'
+        );
     }
 }

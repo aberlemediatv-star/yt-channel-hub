@@ -25,6 +25,14 @@ final class LegacyBridgeController extends Controller
             abort(404);
         }
 
+        // Defense against symlink escape: final resolved path must stay under public/.
+        $realPublic = realpath($public);
+        $realFull = realpath($full);
+        if ($realPublic === false || $realFull === false
+            || ! str_starts_with($realFull, $realPublic . DIRECTORY_SEPARATOR)) {
+            abort(404);
+        }
+
         $orig = [
             'SCRIPT_NAME' => $_SERVER['SCRIPT_NAME'] ?? null,
             'PHP_SELF' => $_SERVER['PHP_SELF'] ?? null,
@@ -35,24 +43,22 @@ final class LegacyBridgeController extends Controller
         $_SERVER['PHP_SELF'] = '/'.$rel;
         $_SERVER['DOCUMENT_ROOT'] = $public;
 
+        $content = '';
         ob_start();
         try {
             include $full;
+            $buffered = ob_get_clean();
+            $content = is_string($buffered) ? $buffered : '';
         } catch (\Throwable $e) {
-            ob_end_clean();
+            if (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            throw $e;
+        } finally {
             foreach ($orig as $k => $v) {
                 if ($v !== null) {
                     $_SERVER[$k] = $v;
                 }
-            }
-            throw $e;
-        }
-
-        $content = ob_get_clean();
-
-        foreach ($orig as $k => $v) {
-            if ($v !== null) {
-                $_SERVER[$k] = $v;
             }
         }
 
