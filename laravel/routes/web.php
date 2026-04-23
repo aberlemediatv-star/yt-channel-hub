@@ -13,9 +13,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['web'])->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('site.home');
+    Route::redirect('/index', '/index.php');
     Route::get('/index.php', [HomeController::class, 'index'])->name('site.home.index');
     Route::get('/datenschutz.php', [LegalController::class, 'datenschutz'])->name('site.datenschutz');
     Route::get('/impressum.php', [LegalController::class, 'impressum'])->name('site.impressum');
+    Route::redirect('/datenschutz', '/datenschutz.php');
+    Route::redirect('/impressum', '/impressum.php');
 
     Route::middleware(['internal.token'])
         ->withoutMiddleware([ValidateCsrfToken::class])

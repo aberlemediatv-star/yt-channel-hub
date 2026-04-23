@@ -52,6 +52,33 @@ final class HttpRoutesTest extends TestCase
         $response->assertSee('adm-login', false);
     }
 
+    public function test_admin_root_redirects_unauthenticated_to_login(): void
+    {
+        $this->get('/admin')
+            ->assertRedirect('/admin/login.php');
+    }
+
+    public function test_staff_root_redirects_unauthenticated_to_login(): void
+    {
+        $this->get('/staff')
+            ->assertRedirect('/staff/login.php');
+    }
+
+    public function test_datenschutz_short_path_redirects(): void
+    {
+        $this->get('/datenschutz')->assertRedirect('/datenschutz.php');
+    }
+
+    public function test_health_short_path_redirects(): void
+    {
+        $this->get('/health')->assertRedirect('/health.php');
+    }
+
+    public function test_index_short_path_redirects(): void
+    {
+        $this->get('/index')->assertRedirect('/index.php');
+    }
+
     public function test_admin_api_keys_requires_internal_token(): void
     {
         $this->get('/admin/api-keys')->assertForbidden();

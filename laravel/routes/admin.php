@@ -24,6 +24,9 @@ Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.admin.auth', 'throttl
 Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.admin.auth'])
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->group(function (): void {
+        // Friendly URL: /admin (middleware sends guests to login.php first).
+        Route::redirect('/admin', '/admin/index.php');
+        Route::redirect('/admin/', '/admin/index.php');
         Route::post('/admin/logout.php', [LoginController::class, 'logout']);
         Route::get('/admin/index.php', [DashboardController::class, 'index']);
 

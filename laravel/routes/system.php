@@ -12,8 +12,10 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/health.php', [HealthController::class, 'show'])->name('system.health');
+Route::redirect('/health', '/health.php');
 
 Route::middleware(['web', 'yt.bootstrap'])->withoutMiddleware([ValidateCsrfToken::class])->group(function (): void {
+    Route::redirect('/backend', '/backend.php');
     Route::any('/sync_videos.php', [SyncVideosController::class, 'show'])->name('system.sync_videos');
     Route::any('/sync_analytics.php', [SyncAnalyticsController::class, 'show'])->name('system.sync_analytics');
     Route::get('/oauth_start.php', [GoogleOAuthController::class, 'start'])->name('system.oauth_start');

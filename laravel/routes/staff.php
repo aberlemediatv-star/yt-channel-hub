@@ -29,6 +29,8 @@ Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.staff.auth', 'throttl
 Route::middleware(['web', 'yt.bootstrap', 'yt.script', 'yt.staff.auth'])
     ->withoutMiddleware([ValidateCsrfToken::class])
     ->group(function (): void {
+        Route::redirect('/staff', '/staff/index.php');
+        Route::redirect('/staff/', '/staff/index.php');
         Route::post('/staff/logout.php', [LoginController::class, 'logout']);
         Route::get('/staff/index.php', [DashboardController::class, 'index']);
         Route::match(['get', 'post'], '/staff/upload.php', [UploadController::class, 'show']);
